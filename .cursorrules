@@ -1,0 +1,915 @@
+# Token Intelligence Hub - Cursor Rules
+
+You are an expert in Next.js, React, TypeScript, Tailwind CSS, Solana development, and Jupiter API integration. Follow these rules meticulously when working on the Token Intelligence Hub codebase.
+
+## Project Overview
+
+This is a **teaching-quality demo application** designed to be forked by hundreds of developers. Every line of code should be exemplary, well-documented, and follow best practices.
+
+**Purpose:** Demonstrate Jupiter API integration with VRFD content, token search, pricing, and trading features.
+**Design:** Clean, minimal aesthetic inspired by solprice.now with perfect center alignment.
+
+## Critical Rules (Check EVERY time)
+
+1. **This is teaching code** - Write code you'd be proud to teach others
+2. **Justify `"use client"`** - Default to Server Components unless hooks/events/browser APIs needed
+3. **Use Typography components** - No raw `<h1>`, `<h2>`, `<p>` tags (CRITICAL)
+4. **Use `@/` imports** - Never relative imports
+5. **No mixing `space-*` parent with child margins** - Creates inconsistent spacing
+6. **Document "why" not "what"** - Comments explain reasoning, not obvious actions
+7. **JSDoc all public APIs** - Components, hooks, and functions need documentation
+
+## File Structure & Naming
+
+### ALL files MUST be in kebab-case
+- ✅ `token-card.tsx`, `use-token-price.ts`, `vrfd-badge.tsx`
+- ❌ `TokenCard.tsx`, `useTokenPrice.ts`, `VRFDBadge.tsx`
+
+### Organization
+```
+components/
+  providers/          # Context providers
+  ui/                 # shadcn components
+  token/              # Token-related components
+  content/            # Content/VRFD components  
+  wallet/             # Wallet components
+  swap/               # Swap components
+  search/             # Search components
+
+lib/
+  jupiter/            # Jupiter API client modules
+    client.ts         # Base fetch wrapper
+    tokens.ts         # Tokens API
+    price.ts          # Price API
+    content.ts        # Content API (VRFD)
+    ultra.ts          # Ultra Swap API
+    portfolio.ts      # Portfolio API
+  config.ts           # Environment variables
+  nuqs.ts             # URL state params
+  utils.ts            # Utilities (cn, etc.)
+
+hooks/
+  use-*.ts            # Custom React hooks
+
+types/
+  jupiter.ts          # Jupiter API types
+```
+
+## Component Patterns
+
+### Server Components (Default)
+
+```typescript
+import { TypographyH1, TypographyP } from "@/components/ui/typography";
+
+/**
+ * Page Name
+ * 
+ * Description of what the page does.
+ * 
+ * Features:
+ * - Feature 1
+ * - Feature 2
+ */
+export default async function PageName() {
+  const data = await fetchData();
+  
+  return (
+    <div>
+      <TypographyH1>Title</TypographyH1>
+      <TypographyP>Content</TypographyP>
+    </div>
+  );
+}
+```
+
+### Client Components (Only When Needed)
+
+```typescript
+"use client"; // JUSTIFIED: uses useState for form state
+
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+
+/**
+ * Component Name
+ * 
+ * Description.
+ * 
+ * Why Client Component: Specific reason (state, events, browser APIs)
+ */
+export function ComponentName() {
+  const [value, setValue] = useState("");
+  
+  return (
+    <input value={value} onChange={(e) => setValue(e.target.value)} />
+  );
+}
+```
+
+## Jupiter API Integration
+
+### Pattern: Centralized API Client
+
+All Jupiter API calls go through `lib/jupiter/client.ts`:
+
+```typescript
+import { jupiterFetch } from "@/lib/jupiter/client";
+
+export async function searchTokens(query: string) {
+  return await jupiterFetch<TokensResponse>(`/tokens/v2/search?query=${query}`);
+}
+```
+
+**Benefits:**
+- Single place for API key management
+- Consistent error handling
+- Type-safe responses
+- Easy to add caching/retry logic
+
+### Pattern: Type All API Responses
+
+```typescript
+// Define in types/jupiter.ts
+export interface TokenInfo {
+  mint: string;
+  name: string;
+  symbol: string;
+  // ... other fields
+}
+
+// Use in API calls
+const tokens = await jupiterFetch<TokenInfo[]>(endpoint);
+```
+
+### Pattern: Parallel Data Fetching
+
+```typescript
+// ✅ Fast: Concurrent requests
+const [tokens, prices, content] = await Promise.all([
+  searchTokens(mint),
+  getPrices([mint]),
+  getContent([mint]),
+]);
+
+// ❌ Slow: Sequential requests  
+const tokens = await searchTokens(mint);
+const prices = await getPrices([mint]);
+```
+
+## Design System (solprice.now Inspired)
+
+### Layout: Center Everything
+
+```typescript
+// Hero sections
+<div className="flex flex-col items-center justify-center pt-20 pb-12 px-6">
+  <div className="text-center space-y-3 max-w-2xl">
+    <TypographyH1>Title</TypographyH1>
+  </div>
+</div>
+
+// Content sections
+<div className="max-w-4xl mx-auto px-6 py-16">
+  {/* Content */}
+</div>
+```
+
+**Why:** Centered layouts create visual focus and balance
+
+### Colors: Pure Black Theme
+
+```css
+/* Backgrounds */
+bg-black           # Pure black background
+bg-white/5         # Subtle card backgrounds
+bg-white/10        # Button backgrounds
+
+/* Borders */
+border-white/10    # Default borders
+border-white/30    # Hover/focus borders
+
+/* Text */
+text-white         # Primary text
+text-white/60      # Muted text
+text-white/40      # Subtle text
+
+/* Accents */
+text-green-400     # Positive (price up)
+text-red-400       # Negative (price down)  
+text-blue-400      # Links and actions
+```
+
+### Typography Scale
+
+```
+Hero titles:     text-5xl to text-6xl
+Prices (large):  text-6xl (on detail pages)
+Prices (cards):  text-3xl
+Section heads:   text-xl to text-2xl
+Body:            text-base
+Labels:          text-sm
+Badges/Meta:     text-xs
+```
+
+### Spacing System
+
+```
+Page padding:    pt-20 pb-12 (heroes), py-16 (sections)
+Card padding:    p-6 to p-8
+Grid gaps:       gap-4 (consistent)
+Section gaps:    space-y-6 to space-y-16
+Max widths:      max-w-2xl (narrow), max-w-4xl (content), max-w-7xl (grids)
+```
+
+### Cards & Components
+
+```typescript
+// Card pattern
+<div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 hover:border-white/30 hover:bg-white/10">
+  {/* Content */}
+</div>
+
+// Always use tabular numbers for prices/stats
+<div className="text-3xl font-bold tabular-nums">
+  ${price.toLocaleString()}
+</div>
+```
+
+## Solana & Wallet Integration
+
+### Pattern: Solana Provider
+
+Based on Solana Kit: https://solana.com/docs/frontend/kit
+
+```typescript
+"use client";
+
+import { createSolanaRpc } from "@solana/kit";
+import { useWallets } from "@wallet-standard/react";
+
+// Initialize only on client
+const rpc = typeof window !== "undefined" 
+  ? createSolanaRpc(config.solanaRpcUrl) 
+  : null;
+```
+
+**Why:** Prevents SSR issues with WebSocket connections
+
+### Pattern: Wallet-Gated Features
+
+```typescript
+export default function PortfolioPage() {
+  const { isConnected, selectedAccount } = useSolana();
+  
+  if (!isConnected) {
+    return <ConnectWalletPrompt />;
+  }
+  
+  // Fetch user data with selectedAccount.address
+}
+```
+
+## URL State Management (nuqs)
+
+### Pattern: Define Params with Short Keys
+
+```typescript
+// lib/nuqs.ts
+export const searchParams = {
+  query: parseAsString.withDefault(""),
+  category: parseAsString.withDefault("all"),
+};
+
+// Short URLs for sharing
+export const searchUrlKeys: UrlKeys<typeof searchParams> = {
+  query: "q",
+  category: "c",
+};
+```
+
+**Why:** Clean, shareable URLs (example.com/search?q=SOL&c=volume)
+
+### Pattern: Wrap nuqs with Custom Hooks
+
+```typescript
+// hooks/use-search-params.ts
+"use client";
+
+import { useQueryStates } from "nuqs";
+import { searchParams, searchUrlKeys } from "@/lib/nuqs";
+
+export function useSearchParams() {
+  return useQueryStates(searchParams, {
+    urlKeys: searchUrlKeys,
+  });
+}
+```
+
+**Why:** Project-specific defaults, easier to update
+
+### Pattern: Always Use Suspense
+
+```typescript
+// Any component using nuqs
+<Suspense fallback={<Loading />}>
+  <ComponentUsingUrlState />
+</Suspense>
+```
+
+**Why:** nuqs uses useSearchParams which requires Suspense in App Router
+
+## TypeScript Patterns
+
+### Strict Types - No `any`
+
+```typescript
+// ✅ Properly typed
+interface Props {
+  tokenInfo: TokenInfo;
+  price: TokenPrice | null;
+}
+
+// ❌ Never use any
+const data: any = await fetch();
+```
+
+### Type API Responses
+
+```typescript
+// types/jupiter.ts
+export interface TokenInfo {
+  mint: string;
+  name: string;
+  symbol: string;
+  decimals: number;
+  logoURI?: string;
+  // ... all fields typed
+}
+
+// Use in API calls
+const response = await jupiterFetch<TokenInfo[]>(endpoint);
+```
+
+### Component Props Pattern
+
+```typescript
+// For standard HTML elements
+function Component({ 
+  className, 
+  ...props 
+}: React.ComponentProps<"div"> & { customProp?: string }) {
+  return <div className={cn("base", className)} {...props} />;
+}
+```
+
+## JSDoc Documentation
+
+### All Public APIs Need JSDoc
+
+```typescript
+/**
+ * Component/Function Name
+ * 
+ * Brief description of purpose.
+ * 
+ * Features:
+ * - Feature 1
+ * - Feature 2
+ * 
+ * Design Decisions:
+ * - Why certain approaches were chosen
+ * 
+ * Why Client Component: Reason (if applicable)
+ * 
+ * @param prop1 - Description
+ * @param prop2 - Description
+ * @returns Description
+ * 
+ * @example
+ * ```tsx
+ * <Component prop1="value" />
+ * ```
+ */
+export function Component({ prop1, prop2 }: Props) {
+  // Implementation
+}
+```
+
+## Comments Pattern
+
+### Explain "Why" Not "What"
+
+```typescript
+// ❌ Obvious comment
+// Fetch tokens
+const tokens = await searchTokens();
+
+// ✅ Explains reasoning
+// Parallel fetching for better performance
+// Why: Reduces total loading time by 60%
+const [tokens, prices] = await Promise.all([...]);
+
+// ✅ Explains non-obvious decisions
+// Force dynamic rendering to avoid build-time API calls
+// Why: Jupiter API requires runtime requests with API keys
+export const dynamic = "force-dynamic";
+```
+
+### No Obvious Section Comments
+
+```typescript
+// ❌ Let structure be self-documenting
+{/* Header */}
+<div>...</div>
+
+// ✅ Only comment complex logic
+// Group content by type for tabbed display
+// Why: Users want to filter by content type
+const contentByType = content.reduce((acc, item) => {
+  if (!acc[item.type]) acc[item.type] = [];
+  acc[item.type].push(item);
+  return acc;
+}, {});
+```
+
+## Error Handling
+
+### Graceful Degradation
+
+```typescript
+// Always handle API errors gracefully
+let data = [];
+let error = null;
+
+try {
+  data = await fetchData();
+} catch (err) {
+  error = err instanceof Error ? err.message : "Unknown error";
+}
+
+// Show user-friendly error states
+{error ? <ErrorState error={error} /> : <DataDisplay data={data} />}
+```
+
+### User-Friendly Error Messages
+
+```typescript
+// ✅ Helpful error message
+{error.includes("429") && (
+  <TypographyP>
+    API tier upgrade in progress. Refresh once upgraded.
+  </TypographyP>
+)}
+
+// ❌ Raw error
+<div>{error}</div>
+```
+
+## Import Organization
+
+### Strict Order: React → Libraries → Local → Types
+
+```typescript
+// 1. React imports
+import { useState, useEffect } from "react";
+
+// 2. Third-party libraries (alphabetically)
+import { ChevronDown, Wallet } from "lucide-react";
+
+// 3. Local component imports (@ alias)
+import { Button } from "@/components/ui/button";
+import { TokenCard } from "@/components/token/token-card";
+
+// 4. Local utility/hook imports
+import { useSolana } from "@/components/providers/solana-provider";
+import { cn } from "@/lib/utils";
+
+// 5. Type-only imports
+import { type TokenInfo } from "@/types/jupiter";
+```
+
+## Styling Rules
+
+### Use Semantic Classes
+
+```typescript
+// ✅ Semantic
+className="bg-white/5 border-white/10 text-white/60"
+
+// ❌ Hardcoded
+className="bg-[#0D0D0D] border-[#1A1A1A]"
+```
+
+### Always Use cn() for Merging
+
+```typescript
+import { cn } from "@/lib/utils";
+
+className={cn(
+  "base-classes",
+  isActive && "active-classes",
+  className
+)}
+```
+
+### Spacing: Parent Handles It
+
+```typescript
+// ✅ Parent uses space-y
+<div className="space-y-6">
+  <Component1 />  {/* No mt-* */}
+  <Component2 />  {/* No mt-* */}
+</div>
+
+// ❌ Don't mix
+<div className="space-y-6">
+  <Component1 className="mt-4" />  {/* Conflicts! */}
+</div>
+```
+
+## Jupiter API Patterns
+
+### 1. Content API (VRFD)
+
+```typescript
+// Get trending tokens
+const cooking = await getCookingTokens();
+
+// Get content for specific tokens
+const content = await getContent(['So11111...']);
+
+// Content types: summary, news, tweet, text
+const summaries = content.filter(c => c.type === 'summary');
+```
+
+### 2. Tokens API v2
+
+```typescript
+// Search by name/symbol/mint
+const tokens = await searchTokens('SOL');
+
+// Get by tag
+const verified = await getTokensByTag('verified');
+
+// Get by category
+const gainers = await getTokensByCategory('gainers', '24h');
+```
+
+### 3. Price API v3
+
+```typescript
+// Get prices for multiple tokens
+const prices = await getPrices(['So11111...', 'EPjFWdd...']);
+
+// Access price data
+console.log(prices['So11111...'].usdPrice);
+console.log(prices['So11111...'].priceChange24h);
+```
+
+### 4. Portfolio API
+
+```typescript
+// Get user positions (requires wallet)
+const portfolio = await getPositions(walletAddress);
+
+// Access holdings
+portfolio.positions.forEach(pos => {
+  console.log(`${pos.mint}: ${pos.amount}`);
+});
+```
+
+### 5. Ultra Swap API
+
+```typescript
+// Get swap order
+const order = await getOrder({
+  inputMint: 'So11111...',
+  outputMint: 'EPjFWdd...',
+  amount: '1000000',
+  userPublicKey: wallet.publicKey,
+});
+
+// Execute swap
+const result = await executeOrder({
+  signedTransaction: signed,
+  requestId: order.requestId,
+});
+```
+
+## Design Patterns
+
+### Center Alignment (Like solprice.now)
+
+```typescript
+// Hero sections - always centered
+<div className="flex flex-col items-center justify-center pt-20 pb-12 px-6">
+  <div className="text-center space-y-3 max-w-2xl">
+    <TypographyH1 className="text-5xl">Title</TypographyH1>
+    <TypographyMuted>Description</TypographyMuted>
+  </div>
+</div>
+
+// Content - max-width for readability
+<div className="max-w-4xl mx-auto px-6 py-16">
+  {/* Content */}
+</div>
+
+// Grids - max-width for optimal card size
+<div className="max-w-7xl mx-auto px-6">
+  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+    {/* Cards */}
+  </div>
+</div>
+```
+
+### Large, Prominent Prices
+
+```typescript
+// Hero price displays (like solprice.now)
+<div className="text-6xl font-bold tabular-nums tracking-tight">
+  ${price.toLocaleString()}
+</div>
+
+// Card price displays
+<div className="text-3xl font-bold tabular-nums">
+  ${price.toLocaleString()}
+</div>
+
+// Always use tabular-nums for alignment
+// Always use color-coded changes
+<div className={cn(
+  "text-sm font-medium flex items-center gap-1",
+  isPositive ? "text-green-400" : "text-red-400"
+)}>
+  <span>{isPositive ? "↗" : "↘"}</span>
+  <span>{isPositive ? "+" : ""}{change.toFixed(2)}% today</span>
+</div>
+```
+
+### Card Design Pattern
+
+```typescript
+<div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 transition-all hover:border-white/30 hover:bg-white/10">
+  {/* Card content */}
+</div>
+```
+
+**Key Classes:**
+- `rounded-xl`: Consistent border radius
+- `border-white/10`: Subtle borders
+- `bg-white/5`: Minimal background
+- `backdrop-blur-sm`: Modern glass effect
+- `hover:border-white/30`: Clear hover feedback
+
+### Empty States Pattern
+
+```typescript
+<div className="flex items-center justify-center min-h-[80vh]">
+  <div className="text-center space-y-6 max-w-md px-6">
+    <div className="text-6xl">🔍</div>
+    <div className="space-y-2">
+      <TypographyH2>State Title</TypographyH2>
+      <TypographyMuted>Description</TypographyMuted>
+    </div>
+  </div>
+</div>
+```
+
+## Responsive Design
+
+### Grid Breakpoints
+
+```typescript
+// Standard responsive grid
+<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+  {/* Cards */}
+</div>
+```
+
+**Breakpoints:**
+- Default: 1 column (mobile)
+- sm (640px): 2 columns (tablet)
+- lg (1024px): 3 columns (desktop)
+
+### Responsive Typography
+
+```typescript
+<TypographyH1 className="text-4xl sm:text-5xl lg:text-6xl">
+  Title
+</TypographyH1>
+```
+
+## State Management
+
+### Local State: useState
+
+```typescript
+const [isLoading, setIsLoading] = useState(false);
+const [tokens, setTokens] = useState<TokenInfo[]>([]);
+```
+
+### URL State: nuqs
+
+```typescript
+const [params, setParams] = useSearchParams();
+
+// Update URL state
+setParams({ query: "SOL" }); // URL becomes ?q=SOL
+```
+
+### Wallet State: Context
+
+```typescript
+const { isConnected, selectedAccount } = useSolana();
+```
+
+## Performance Patterns
+
+### Dynamic Rendering for API Pages
+
+```typescript
+// Force dynamic rendering to avoid build-time API calls
+// Why: Jupiter API requires runtime requests with API keys
+export const dynamic = "force-dynamic";
+```
+
+### Loading States
+
+```typescript
+// Server Components
+export default async function Page() {
+  const data = await fetchData();
+  // ... Use loading.tsx for loading state
+}
+
+// Client Components
+{isLoading ? (
+  <Skeleton className="h-64 bg-white/5" />
+) : (
+  <Content />
+)}
+```
+
+## Accessibility
+
+### Semantic HTML with Typography
+
+```typescript
+// ✅ Semantic
+<TypographyH1>Main Title</TypographyH1>
+<TypographyP>Content</TypographyP>
+
+// Structure is clear for screen readers
+```
+
+### ARIA Labels
+
+```typescript
+<Button>
+  <Icon />
+  <span className="sr-only">Button purpose</span>
+</Button>
+```
+
+### External Links
+
+```typescript
+<a 
+  href="https://external.com"
+  target="_blank"
+  rel="noopener noreferrer"
+>
+  Link
+</a>
+```
+
+## Common Pitfalls to Avoid
+
+### ❌ DON'T: Raw HTML Tags
+```typescript
+<h1>Title</h1>  // WRONG
+<p>Text</p>     // WRONG
+```
+
+### ✅ DO: Typography Components
+```typescript
+<TypographyH1>Title</TypographyH1>
+<TypographyP>Text</TypographyP>
+```
+
+### ❌ DON'T: Relative Imports
+```typescript
+import { Button } from "../../ui/button"
+```
+
+### ✅ DO: @ Imports
+```typescript
+import { Button } from "@/components/ui/button"
+```
+
+### ❌ DON'T: Unjustified Client Components
+```typescript
+"use client";  // No comment
+
+export function Component() { }
+```
+
+### ✅ DO: Justify Every Client Directive
+```typescript
+"use client"; // JUSTIFIED: uses useState for form state
+
+export function Component() { }
+```
+
+### ❌ DON'T: Ignore TypeScript
+```typescript
+const data: any = await fetch();  // NO!
+```
+
+### ✅ DO: Type Everything
+```typescript
+const data: TokenInfo[] = await searchTokens(query);
+```
+
+## Pre-Commit Checklist
+
+Before committing code, verify:
+
+- [ ] All files in kebab-case
+- [ ] Every `"use client"` has justification comment
+- [ ] Using Typography components (no raw HTML)
+- [ ] All imports use `@/` alias
+- [ ] Imports organized: React → libs → local → types
+- [ ] JSDoc on new public APIs
+- [ ] Comments explain "why" for complex logic
+- [ ] No linter errors (`npm run build`)
+- [ ] TypeScript strict (no `any` types)
+- [ ] Proper spacing (no space-* mixing)
+- [ ] Responsive design (sm:, lg: breakpoints)
+- [ ] Centered layouts with max-w
+- [ ] Tabular nums for prices
+- [ ] Error handling for async ops
+- [ ] Loading states for data fetching
+
+## Testing Checklist
+
+- [ ] Works without wallet connected
+- [ ] Works with wallet connected
+- [ ] Search functionality works
+- [ ] Token detail pages load
+- [ ] Content feed pagination works
+- [ ] Dropdowns are readable (white text)
+- [ ] Responsive on mobile, tablet, desktop
+- [ ] No console errors
+- [ ] Links open in new tabs with noopener
+
+## Project-Specific Rules
+
+### VRFD Content
+
+Always show attribution:
+```typescript
+<div className="text-xs text-white/60">
+  By {content.submittedBy}
+</div>
+{content.source && (
+  <a href={content.source} target="_blank" rel="noopener noreferrer">
+    View source ↗
+  </a>
+)}
+```
+
+### Price Displays
+
+Always format with proper decimals:
+```typescript
+${price.usdPrice.toLocaleString(undefined, {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: price.usdPrice < 1 ? 6 : 2,
+})}
+```
+
+### Token Cards
+
+Always include:
+1. Token logo with fallback
+2. Symbol and name
+3. Current price (large, prominent)
+4. 24h change (color-coded)
+5. VRFD badge if content available
+6. Key stats (market cap, holders)
+
+## Remember
+
+This is **teaching-quality code** designed to be forked by hundreds of developers.
+
+Every line should:
+- Follow best practices
+- Be well-documented
+- Explain "why" decisions were made
+- Demonstrate proper patterns
+- Be production-ready
+
+**Write code you'd be proud to teach others.**
+
