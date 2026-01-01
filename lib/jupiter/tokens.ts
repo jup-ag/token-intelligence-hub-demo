@@ -1,5 +1,5 @@
 import { jupiterFetch } from "@/lib/jupiter/client";
-import { type TokenInfo, type TokensSearchResponse, type CategoryResponse } from "@/types/jupiter";
+import { type TokenInfo } from "@/types/jupiter";
 
 /**
  * Jupiter Tokens API v2 Client
@@ -8,70 +8,45 @@ import { type TokenInfo, type TokensSearchResponse, type CategoryResponse } from
  * API Reference: https://dev.jup.ag/api-reference/tokens/v2
  */
 
+/** Normalize API response to array */
+function toArray(response: unknown): unknown[] {
+  if (Array.isArray(response)) return response;
+  if (response && typeof response === "object") return Object.values(response);
+  return [];
+}
+
+/** Map API token to our TokenInfo interface (handles id→mint, icon→logoURI) */
+function mapToken(data: unknown): TokenInfo {
+  const token = data as Record<string, unknown>;
+  return {
+    mint: (token.id || token.mint) as string,
+    name: token.name as string,
+    symbol: token.symbol as string,
+    decimals: token.decimals as number,
+    logoURI: (token.icon || token.logoURI) as string | undefined,
+    tags: token.tags as string[] | undefined,
+    organicScore: token.organicScore as number | undefined,
+    marketCap: token.marketCap as number | undefined,
+    holders: (token.holders || token.holderCount) as number | undefined,
+  };
+}
+
 /**
  * Search for tokens by name, symbol, or mint address
- * 
- * @param query - Search term (name, symbol, or mint address)
- * @returns Array of matching tokens with metadata
- * 
- * @example
- * ```typescript
- * const solTokens = await searchTokens('SOL');
- * const byMint = await searchTokens('So11111...');
- * ```
  */
 export async function searchTokens(query: string): Promise<TokenInfo[]> {
-  if (!query || query.trim().length === 0) {
-    return [];
-  }
+  if (!query?.trim()) return [];
   
-  const response = await jupiterFetch<any>(
+  const response = await jupiterFetch<unknown>(
     `/tokens/v2/search?query=${encodeURIComponent(query)}`
   );
   
-  // Handle different response formats
-  let tokensArray: any[] = [];
-  
-  if (Array.isArray(response)) {
-    tokensArray = response;
-  } else if (response && typeof response === "object") {
-    tokensArray = Object.values(response);
-  }
-  
-  // Map API field names to our TokenInfo interface
-  // Search API uses: id → mint, icon → logoURI
-  return tokensArray.map((token) => ({
-    mint: token.id || token.mint,
-    name: token.name,
-    symbol: token.symbol,
-    decimals: token.decimals,
-    logoURI: token.icon || token.logoURI,
-    tags: token.tags,
-    organicScore: token.organicScore,
-    marketCap: token.marketCap,
-    holders: token.holders || token.holderCount,
-  }));
+  return toArray(response).map(mapToken);
 }
 
 export async function getTokensByTag(tag: "verified" | "lst"): Promise<TokenInfo[]> {
-  const response = await jupiterFetch<any>(
-    `/tokens/v2/tag?query=${tag}`
-  );
-  
-  const tokensArray = Array.isArray(response) ? response : Object.values(response);
-  
-  // Map API field names to our TokenInfo interface
-  return tokensArray.map((token) => ({
-    mint: token.id || token.mint,
-    name: token.name,
-    symbol: token.symbol,
-    decimals: token.decimals,
-    logoURI: token.icon || token.logoURI,
-    tags: token.tags,
-    organicScore: token.organicScore,
-    marketCap: token.marketCap,
-    holders: token.holders || token.holderCount,
-  }));
+  const response = await jupiterFetch<unknown>(`/tokens/v2/tag?query=${tag}`);
+  return toArray(response).map(mapToken);
 }
 
 export async function getTokensByCategory(
@@ -79,53 +54,15 @@ export async function getTokensByCategory(
   interval: "5m" | "1h" | "6h" | "24h" = "5m",
   limit: number = 50
 ): Promise<TokenInfo[]> {
-  const response = await jupiterFetch<any>(
+  const response = await jupiterFetch<unknown>(
     `/tokens/v2/${category}/${interval}?limit=${limit}`
   );
-  
-  // Handle different response formats
-  let tokensArray: any[] = [];
-  
-  if (Array.isArray(response)) {
-    tokensArray = response;
-  } else if (response && typeof response === "object") {
-    tokensArray = Object.values(response);
-  }
-  
-  // Map API field names to our TokenInfo interface
-  // Category API uses: id → mint, icon → logoURI
-  return tokensArray.map((token) => ({
-    mint: token.id || token.mint,
-    name: token.name,
-    symbol: token.symbol,
-    decimals: token.decimals,
-    logoURI: token.icon || token.logoURI,
-    tags: token.tags,
-    organicScore: token.organicScore,
-    marketCap: token.marketCap,
-    holders: token.holders || token.holderCount,
-  }));
+  return toArray(response).map(mapToken);
 }
 
 export async function getRecentTokens(): Promise<TokenInfo[]> {
-  const response = await jupiterFetch<any>(
-    `/tokens/v2/recent`
-  );
-  
-  const tokensArray = Array.isArray(response) ? response : Object.values(response);
-  
-  // Map API field names to our TokenInfo interface
-  return tokensArray.map((token) => ({
-    mint: token.id || token.mint,
-    name: token.name,
-    symbol: token.symbol,
-    decimals: token.decimals,
-    logoURI: token.icon || token.logoURI,
-    tags: token.tags,
-    organicScore: token.organicScore,
-    marketCap: token.marketCap,
-    holders: token.holders || token.holderCount,
-  }));
+  const response = await jupiterFetch<unknown>(`/tokens/v2/recent`);
+  return toArray(response).map(mapToken);
 }
 
 export async function getTokenInfo(mint: string): Promise<TokenInfo | null> {

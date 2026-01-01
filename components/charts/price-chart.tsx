@@ -10,6 +10,7 @@ import {
   LineElement,
   Tooltip,
   Filler,
+  type TooltipItem,
 } from "chart.js";
 import { Line } from "react-chartjs-2";
 
@@ -139,16 +140,16 @@ export function PriceChart({ mint }: PriceChartProps) {
         cornerRadius: 10,
         displayColors: false,
         callbacks: {
-          title: (items: { label: number }[]) => {
-            const date = new Date(items[0].label);
+          title: (items: TooltipItem<"line">[]) => {
+            const date = new Date(items[0]?.parsed?.x ?? 0);
             return date.toLocaleTimeString("en-US", {
               hour: "numeric",
               minute: "2-digit",
               hour12: true,
             });
           },
-          label: (item: { raw: number }) => {
-            const price = item.raw;
+          label: (item: TooltipItem<"line">) => {
+            const price = item.parsed?.y ?? 0;
             const decimals = price < 1 ? 6 : price < 100 ? 4 : 2;
             return (
               "$" +

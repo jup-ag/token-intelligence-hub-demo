@@ -2,10 +2,11 @@ import { Badge } from "@/components/ui/badge";
 import { TokenPageContent } from "@/components/content/token-page-content";
 import { SwapWidget } from "@/components/swap/swap-widget";
 import { PriceChart } from "@/components/charts/price-chart";
+import { TokenLogo } from "@/components/token/token-logo";
 import { searchTokens } from "@/lib/jupiter/tokens";
 import { getPrices } from "@/lib/jupiter/price";
 import { getContent } from "@/lib/jupiter/content";
-import { cn } from "@/lib/utils";
+import { cn, formatPrice, formatCompact, formatPercent } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +50,6 @@ export default async function TokenPage({ params }: TokenPageProps) {
   const tokenSummary = content.find(c => c.id?.includes('token-summary'));
   const newsSummary = content.find(c => c.id?.includes('news-summary'));
   const otherContent = content.filter(c => !c.id?.includes('-summary'));
-  const hasLogo = tokenInfo.logoURI && !tokenInfo.logoURI.includes('ipfs');
 
   return (
     <div className="min-h-screen">
@@ -61,19 +61,7 @@ export default async function TokenPage({ params }: TokenPageProps) {
             <div>
               {/* Logo + Name */}
               <div className="flex items-center gap-4 mb-8">
-                {hasLogo ? (
-                  <img 
-                    src={tokenInfo.logoURI} 
-                    alt={tokenInfo.name}
-                    className="size-14 rounded-2xl object-cover"
-                  />
-                ) : (
-                  <div className="size-14 rounded-2xl bg-white/[0.06] flex items-center justify-center">
-                    <span className="text-xl font-semibold text-white/40">
-                      {tokenInfo.symbol.slice(0, 2)}
-                    </span>
-                  </div>
-                )}
+                <TokenLogo logoURI={tokenInfo.logoURI} symbol={tokenInfo.symbol} size="lg" />
                 <div>
                   <div className="flex items-center gap-2">
                     <h1 className="text-2xl font-semibold tracking-tight">
@@ -90,19 +78,16 @@ export default async function TokenPage({ params }: TokenPageProps) {
                 {price ? (
                   <>
                     <div className="text-6xl font-semibold tabular-nums tracking-tight mb-2">
-                      ${price.usdPrice.toLocaleString(undefined, {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: price.usdPrice < 1 ? 6 : 2,
-                      })}
+                      ${formatPrice(price.usdPrice)}
                     </div>
-                    {price.priceChange24h !== undefined && (
+                    {price.priceChange24h != null && (
                       <span className={cn(
                         "inline-flex px-3 py-1 rounded-full text-sm font-medium",
                         isPositive 
                           ? "bg-[#30D158]/10 text-[#30D158]" 
                           : "bg-[#FF453A]/10 text-[#FF453A]"
                       )}>
-                        {isPositive ? "+" : ""}{price.priceChange24h.toFixed(2)}% · 24h
+                        {formatPercent(price.priceChange24h)} · 24h
                       </span>
                     )}
                   </>
@@ -116,28 +101,19 @@ export default async function TokenPage({ params }: TokenPageProps) {
                 {tokenInfo.marketCap && (
                   <div>
                     <span className="text-white/30">MCap </span>
-                    <span className="text-white/70 tabular-nums">
-                      ${tokenInfo.marketCap >= 1e9 
-                        ? `${(tokenInfo.marketCap / 1e9).toFixed(2)}B`
-                        : `${(tokenInfo.marketCap / 1e6).toFixed(1)}M`
-                      }
-                    </span>
+                    <span className="text-white/70 tabular-nums">${formatCompact(tokenInfo.marketCap)}</span>
                   </div>
                 )}
-                {tokenInfo.holders !== undefined && (
+                {tokenInfo.holders != null && (
                   <div>
                     <span className="text-white/30">Holders </span>
-                    <span className="text-white/70 tabular-nums">
-                      {tokenInfo.holders.toLocaleString()}
-                    </span>
+                    <span className="text-white/70 tabular-nums">{formatCompact(tokenInfo.holders)}</span>
                   </div>
                 )}
                 {tokenInfo.organicScore && (
                   <div>
                     <span className="text-white/30">Score </span>
-                    <span className="text-white/70 tabular-nums">
-                      {tokenInfo.organicScore.toFixed(1)}
-                    </span>
+                    <span className="text-white/70 tabular-nums">{tokenInfo.organicScore.toFixed(1)}</span>
                   </div>
                 )}
               </div>

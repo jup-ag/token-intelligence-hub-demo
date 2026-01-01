@@ -1,36 +1,13 @@
 "use client";
 
 import { TweetEmbed } from "@/components/content/tweet-embed";
+import { TokenLogo } from "@/components/token/token-logo";
 import { type TokenContent, type TokenInfo } from "@/types/jupiter";
 import Link from "next/link";
-import { useState } from "react";
 
 interface ContentCardProps {
   content: TokenContent;
   tokenInfo?: TokenInfo;
-}
-
-function TokenImage({ tokenInfo, mint }: { tokenInfo?: TokenInfo; mint: string }) {
-  const [imgError, setImgError] = useState(false);
-  const hasLogo = tokenInfo?.logoURI && !tokenInfo.logoURI.includes('ipfs') && !imgError;
-  
-  if (hasLogo) {
-    return (
-      <img 
-        src={tokenInfo.logoURI} 
-        alt={tokenInfo.symbol}
-        className="size-6 rounded-full object-cover"
-        onError={() => setImgError(true)}
-      />
-    );
-  }
-  
-  const symbol = tokenInfo?.symbol || mint.slice(0, 2);
-  return (
-    <div className="size-6 rounded-full bg-white/[0.08] flex items-center justify-center text-[10px] font-medium text-white/50">
-      {symbol.slice(0, 2).toUpperCase()}
-    </div>
-  );
 }
 
 const typeStyles = {
@@ -50,7 +27,7 @@ export function ContentCard({ content, tokenInfo }: ContentCardProps) {
         {/* Minimal header */}
         <div className="px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TokenImage tokenInfo={tokenInfo} mint={content.mint} />
+            <TokenLogo logoURI={tokenInfo?.logoURI} symbol={tokenInfo?.symbol || content.mint.slice(0, 2)} size="sm" />
             <span className="text-sm font-medium text-white/80">
               {tokenInfo?.symbol || 'Token'}
             </span>
@@ -82,7 +59,7 @@ export function ContentCard({ content, tokenInfo }: ContentCardProps) {
       <div className="card-elevated rounded-2xl p-5 hover:bg-white/[0.05] transition-apple cursor-pointer">
         {/* Header */}
         <div className="flex items-center gap-2 mb-4">
-          <TokenImage tokenInfo={tokenInfo} mint={content.mint} />
+          <TokenLogo logoURI={tokenInfo?.logoURI} symbol={tokenInfo?.symbol || content.mint.slice(0, 2)} size="sm" />
           <span className="text-sm font-medium text-white/80">
             {tokenInfo?.symbol || content.mint.slice(0, 8)}
           </span>
