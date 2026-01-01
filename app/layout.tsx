@@ -1,26 +1,23 @@
 import { type Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { SolanaProvider } from "@/components/providers/solana-provider";
 import { NuqsProvider } from "@/components/providers/nuqs-adapter";
 import { WalletConnectButton } from "@/components/wallet/wallet-connect-button";
+import { SearchCommand, SearchTrigger } from "@/components/search/search-command";
+import Link from "next/link";
 import "./globals.css";
 
-const geistSans = Geist({
+const inter = Inter({
+  subsets: ["latin"],
+  display: "swap",
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
 });
 
 export const metadata: Metadata = {
-  title: "Token Intelligence Hub",
-  description: "Jupiter-powered token research and trading platform with VRFD verification",
+  title: "Token Intelligence",
+  description: "Research and trade Solana tokens with verified intelligence",
 };
 
-// Force dynamic rendering for wallet integration
 export const dynamic = "force-dynamic";
 
 export default function RootLayout({
@@ -29,54 +26,52 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html lang="en" className={inter.variable}>
+      <body className="antialiased">
         <SolanaProvider>
           <NuqsProvider>
-            <div className="min-h-screen flex flex-col bg-black text-white">
-              {/* Clean navbar - perfectly aligned like solprice.now */}
-              <header className="sticky top-0 z-50 border-b border-white/10 bg-black/80 backdrop-blur-xl">
-                <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-                  {/* Logo/Brand */}
-                  <a 
-                    href="/" 
-                    className="text-base font-medium tracking-tight hover:text-white/80 transition-colors"
-                  >
-                    Token Intelligence
-                  </a>
-                  
-                  {/* Center Navigation */}
-                  <div className="hidden md:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
-                    <a 
-                      href="/search" 
-                      className="text-sm text-white/60 hover:text-white transition-colors"
+            <div className="min-h-screen flex flex-col">
+              {/* Minimal navbar */}
+              <header className="fixed top-0 left-0 right-0 z-50">
+                <div className="glass glass-border">
+                  <nav className="mx-auto flex max-w-7xl items-center justify-between px-6 h-14">
+                    {/* Logo */}
+                    <Link 
+                      href="/" 
+                      className="text-[15px] font-medium text-white/90 hover:text-white transition-apple"
                     >
-                      Search
-                    </a>
-                    <a 
-                      href="/portfolio" 
-                      className="text-sm text-white/60 hover:text-white transition-colors"
-                    >
-                      Portfolio
-                    </a>
-                    <a 
-                      href="/content" 
-                      className="text-sm text-white/60 hover:text-white transition-colors"
-                    >
-                      Content
-                    </a>
-                  </div>
-                  
-                  {/* Wallet Button */}
-                  <div>
+                      Token Intelligence
+                    </Link>
+                    
+                    {/* Center - Search + Nav */}
+                    <div className="hidden md:flex items-center gap-6">
+                      <SearchTrigger />
+                      <div className="w-px h-4 bg-white/10" />
+                      <Link 
+                        href="/content" 
+                        className="text-[13px] text-white/50 hover:text-white transition-apple"
+                      >
+                        Content
+                      </Link>
+                      <Link 
+                        href="/portfolio" 
+                        className="text-[13px] text-white/50 hover:text-white transition-apple"
+                      >
+                        Portfolio
+                      </Link>
+                    </div>
+                    
+                    {/* Wallet */}
                     <WalletConnectButton />
-                  </div>
-                </nav>
+                  </nav>
+                </div>
               </header>
               
-              <main className="flex-1">{children}</main>
+              {/* Spotlight search dialog */}
+              <SearchCommand />
+              
+              {/* Main content */}
+              <main className="flex-1 pt-14">{children}</main>
             </div>
           </NuqsProvider>
         </SolanaProvider>

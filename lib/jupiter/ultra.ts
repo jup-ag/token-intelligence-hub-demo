@@ -5,13 +5,22 @@ interface OrderParams {
   outputMint: string;
   amount: string;
   slippageBps?: number;
-  userPublicKey: string;
 }
 
 interface OrderResponse {
+  /** Base64-encoded unsigned transaction (null if taker not provided) */
+  transaction: string | null;
+  /** Request ID to use with /execute endpoint */
   requestId: string;
-  transaction: string;
-  message?: string;
+  /** Input token amount in raw units */
+  inAmount?: string;
+  /** Output token amount in raw units */
+  outAmount?: string;
+  /** Fee mint address */
+  feeMint?: string;
+  /** Fee in basis points */
+  feeBps?: number;
+  [key: string]: any;
 }
 
 interface ExecuteParams {
@@ -20,15 +29,23 @@ interface ExecuteParams {
 }
 
 interface ExecuteResponse {
-  signature: string;
-  status: string;
+  signature?: string;
+  status?: string;
+  [key: string]: any;
 }
 
-export async function getOrder(params: OrderParams): Promise<OrderResponse> {
-  const response = await jupiterFetch<OrderResponse>(`/ultra/v1/order`, {
-    method: "POST",
-    body: JSON.stringify(params),
+export async function getOrder(params: OrderParams & { taker?: string }): Promise<OrderResponse> {
+  const queryParams = new URLSearchParams({
+    inputMint: params.inputMint,
+    outputMint: params.outputMint,
+    amount: params.amount,
+    ...(params.slippageBps && { slippageBps: params.slippageBps.toString() }),
+    ...(params.taker && { taker: params.taker }),
   });
+  
+  const response = await jupiterFetch<OrderResponse>(
+    `/ultra/v1/order?${queryParams.toString()}`
+  );
   
   return response;
 }
@@ -43,7 +60,7 @@ export async function executeOrder(params: ExecuteParams): Promise<ExecuteRespon
 }
 
 export async function getHoldings(address: string) {
-  const response = await jupiterFetch(`/ultra/v1/holdings?address=${address}`);
+  const response = await jupiterFetch(`/ultra/v1/holdings/${address}`);
   return response;
 }
 

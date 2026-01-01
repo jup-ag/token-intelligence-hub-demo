@@ -1,77 +1,53 @@
-"use client"; // JUSTIFIED: needs wallet connection state via useSolana hook
+"use client";
 
 import { useEffect, useState } from "react";
 import { useSolana } from "@/components/providers/solana-provider";
-import { TypographyH1, TypographyH2, TypographyMuted } from "@/components/ui/typography";
-import { Button } from "@/components/ui/button";
-import { TokenCard } from "@/components/token/token-card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { getPositions } from "@/lib/jupiter/portfolio";
-import { getPrices } from "@/lib/jupiter/price";
-import { searchTokens } from "@/lib/jupiter/tokens";
-import { type Position, type TokenInfo, type PricesResponse } from "@/types/jupiter";
+import { getPositions, getPlatforms } from "@/lib/jupiter/portfolio";
+import { type PortfolioElement } from "@/types/jupiter";
+import { ExternalLink, RefreshCw } from "lucide-react";
+import { cn } from "@/lib/utils";
 
-// Force dynamic rendering for client component
-// Why: Client component with dynamic wallet data cannot be pre-rendered
 export const dynamic = "force-dynamic";
 
-/**
- * Portfolio Dashboard Page
- * 
- * Displays user's token holdings and total portfolio value.
- * Requires wallet connection to function.
- * 
- * Features:
- * - Total portfolio value (large, prominent display)
- * - Individual token holdings with current prices
- * - Refresh functionality to update data
- * - Integration with Portfolio API
- * 
- * Why Client Component: Needs wallet connection state from Solana provider
- */
 export default function PortfolioPage() {
-  const { isConnected, selectedAccount } = useSolana();
-  const [positions, setPositions] = useState<Position[]>([]);
-  const [tokens, setTokens] = useState<Record<string, TokenInfo>>({});
-  const [prices, setPrices] = useState<PricesResponse>({});
+  const { isConnected, account } = useSolana();
+  const [elements, setElements] = useState<PortfolioElement[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [totalValue, setTotalValue] = useState(0);
+  const [totalPnl, setTotalPnl] = useState(0);
 
   useEffect(() => {
-    if (isConnected && selectedAccount) {
+    if (isConnected && account) {
       fetchPortfolio();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isConnected, selectedAccount]);
+  }, [isConnected, account]);
 
   const fetchPortfolio = async () => {
-    if (!selectedAccount) return;
+    if (!account) return;
 
     setIsLoading(true);
     try {
-      const portfolioData = await getPositions(selectedAccount.address);
-      setPositions(portfolioData.positions || []);
-      setTotalValue(portfolioData.totalValue || 0);
-
-      const mints = portfolioData.positions?.map((p) => p.mint) || [];
-      if (mints.length > 0) {
-        const [pricesData, ...tokensArrays] = await Promise.all([
-          getPrices(mints),
-          ...mints.map((mint) => searchTokens(mint)),
-        ]);
-
-        setPrices(pricesData);
-
-        const tokensMap = tokensArrays.reduce((acc, tokensArray, index) => {
-          const token = tokensArray.find((t) => t.mint === mints[index]);
-          if (token) {
-            acc[token.mint] = token;
+      const portfolioData = await getPositions(account);
+      const portfolioElements = portfolioData.elements || [];
+      setElements(portfolioElements);
+      
+      let totalVal = 0;
+      let totalPnlVal = 0;
+      
+      for (const element of portfolioElements) {
+        totalVal += element.value || 0;
+        if (element.data?.assets) {
+          for (const asset of element.data.assets) {
+            if (asset.attributes?.prediction?.pnlAfterFeesValue) {
+              totalPnlVal += asset.attributes.prediction.pnlAfterFeesValue;
+            }
           }
-          return acc;
-        }, {} as Record<string, TokenInfo>);
-
-        setTokens(tokensMap);
+        }
       }
+      
+      setTotalValue(portfolioData.totalValue || totalVal);
+      setTotalPnl(totalPnlVal);
     } catch (error) {
       console.error("Failed to fetch portfolio:", error);
     } finally {
@@ -79,18 +55,15 @@ export default function PortfolioPage() {
     }
   };
 
-  // Wallet not connected - show connection prompt
   if (!isConnected) {
     return (
-      <div className="flex items-center justify-center min-h-[80vh]">
-        <div className="text-center space-y-6 max-w-md px-6">
-          <div className="text-6xl">👛</div>
-          <div className="space-y-2">
-            <TypographyH1 className="text-4xl">Portfolio</TypographyH1>
-            <TypographyMuted className="[&:not(:first-child)]:mt-0">
-              Connect your wallet to view your holdings
-            </TypographyMuted>
-          </div>
+      <div className="min-h-screen flex items-center justify-center px-6">
+        <div className="text-center space-y-4">
+          <p className="text-6xl">👛</p>
+          <h1 className="text-4xl font-semibold tracking-tight">Portfolio</h1>
+          <p className="text-white/40">
+            Connect your wallet to view positions
+          </p>
         </div>
       </div>
     );
@@ -98,73 +71,190 @@ export default function PortfolioPage() {
 
   return (
     <div className="min-h-screen">
-      {/* Hero Section - Total portfolio value display */}
-      <div className="flex flex-col items-center justify-center pt-20 pb-12 px-6 border-b border-white/10">
-        <div className="text-center space-y-8 max-w-2xl w-full">
-          <div className="flex items-center justify-between w-full">
-            <TypographyH1 className="text-5xl">Portfolio</TypographyH1>
-            <Button 
-              onClick={fetchPortfolio} 
+      {/* Hero */}
+      <section className="pt-32 pb-16 px-6 border-b border-white/[0.06]">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-start justify-between mb-12">
+            <h1 className="text-6xl sm:text-7xl font-semibold tracking-tight">
+              Portfolio
+            </h1>
+            <button
+              onClick={fetchPortfolio}
               disabled={isLoading}
-              variant="ghost"
-              size="sm"
-              className="text-white/60 hover:text-white"
+              className="p-3 rounded-full bg-white/[0.06] hover:bg-white/[0.1] transition-apple disabled:opacity-50"
             >
-              {isLoading ? "Refreshing..." : "Refresh"}
-            </Button>
+              <RefreshCw className={cn("size-5 text-white/60", isLoading && "animate-spin")} />
+            </button>
           </div>
 
-          {/* Total Value - Large display for immediate impact */}
-          <div className="space-y-2">
-            <TypographyMuted className="text-sm [&:not(:first-child)]:mt-0">
-              Total Value
-            </TypographyMuted>
-            <div className="text-6xl font-bold tabular-nums tracking-tight">
-              ${totalValue.toLocaleString(undefined, { 
-                minimumFractionDigits: 2, 
-                maximumFractionDigits: 2 
-              })}
+          {/* Stats */}
+          <div className="flex gap-16">
+            <div>
+              <p className="text-sm text-white/40 mb-2">Total Value</p>
+              <p className="text-5xl font-semibold tabular-nums tracking-tight">
+                ${totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-white/40 mb-2">P&L</p>
+              <p className={cn(
+                "text-5xl font-semibold tabular-nums tracking-tight",
+                totalPnl >= 0 ? "text-[#30D158]" : "text-[#FF453A]"
+              )}>
+                {totalPnl >= 0 ? "+" : ""}{totalPnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-white/40 mb-2">Positions</p>
+              <p className="text-5xl font-semibold tabular-nums tracking-tight">
+                {elements.length}
+              </p>
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Holdings Grid - Max-width for optimal card sizing */}
-      <div className="max-w-6xl mx-auto px-6 py-16">
-        <TypographyH2 className="text-xl mb-8 text-center border-none pb-0">
-          Holdings
-        </TypographyH2>
+      {/* Positions */}
+      <section className="px-6 py-12">
+        <div className="max-w-5xl mx-auto">
+          <h2 className="text-lg font-medium mb-6">Positions</h2>
 
-        {isLoading ? (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-64 bg-white/5" />
-            ))}
-          </div>
-        ) : positions.length === 0 ? (
-          <div className="flex items-center justify-center py-20">
-            <TypographyMuted>
-              No positions found. Start trading to build your portfolio!
-            </TypographyMuted>
-          </div>
+          {isLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="h-32 rounded-2xl bg-white/[0.03] animate-pulse" />
+              ))}
+            </div>
+          ) : elements.length === 0 ? (
+            <div className="card-elevated rounded-2xl p-12 text-center">
+              <p className="text-4xl mb-4">📊</p>
+              <p className="text-lg font-medium mb-2">No positions yet</p>
+              <p className="text-white/40 text-sm">
+                Open positions on Jupiter to see them here
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {elements.map((element, index) => (
+                <PositionCard key={`${element.platformId}-${index}`} element={element} />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function PositionCard({ element }: { element: PortfolioElement }) {
+  const { platformId, platformName, platformImage, type, label, value, data } = element;
+  const asset = data?.assets?.[0];
+  const prediction = asset?.attributes?.prediction;
+
+  if (prediction) {
+    return <PredictionCard asset={asset} prediction={prediction} value={value} />;
+  }
+
+  return (
+    <div className="card-elevated rounded-2xl p-6">
+      <div className="flex items-center gap-4">
+        {platformImage ? (
+          <img src={platformImage} alt={platformName || platformId} className="size-12 rounded-xl" />
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {positions.map((position) => {
-              const token = tokens[position.mint];
-              if (!token) return null;
-
-              return (
-                <TokenCard
-                  key={position.mint}
-                  tokenInfo={token}
-                  price={prices[position.mint] || null}
-                />
-              );
-            })}
+          <div className="size-12 rounded-xl bg-white/[0.06] flex items-center justify-center text-sm font-medium text-white/40">
+            {(platformName || platformId).slice(0, 2).toUpperCase()}
           </div>
         )}
+        <div className="flex-1">
+          <p className="font-medium">{platformName || platformId}</p>
+          <p className="text-sm text-white/40">{label || type}</p>
+        </div>
+        <p className="text-2xl font-semibold tabular-nums">${value.toFixed(2)}</p>
       </div>
     </div>
   );
 }
 
+function PredictionCard({ asset, prediction, value }: { asset: any; prediction: any; value: number }) {
+  const market = prediction.market;
+  const isProfit = prediction.pnlAfterFeesValue >= 0;
+  const isYes = prediction.sideName === "Yes";
+
+  return (
+    <div className="card-elevated rounded-2xl overflow-hidden">
+      <div className="p-6">
+        <div className="flex items-start gap-4">
+          {asset.imageUri && (
+            <img 
+              src={asset.imageUri} 
+              alt={market.eventTitle}
+              className="size-16 rounded-xl object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+          )}
+          <div className="flex-1 min-w-0">
+            <p className="font-medium leading-tight mb-2">{market.eventTitle}</p>
+            <div className="flex items-center gap-2">
+              <span className={cn(
+                "px-2 py-0.5 rounded text-sm font-medium",
+                isYes ? "bg-[#30D158]/20 text-[#30D158]" : "bg-[#FF453A]/20 text-[#FF453A]"
+              )}>
+                {prediction.sideName}
+              </span>
+              <span className="text-white/40 text-sm">{prediction.size} shares</span>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-2xl font-semibold tabular-nums">${value.toFixed(2)}</p>
+            <p className={cn(
+              "text-sm tabular-nums",
+              isProfit ? "text-[#30D158]" : "text-[#FF453A]"
+            )}>
+              {isProfit ? "+" : ""}{prediction.pnlAfterFeesValue.toFixed(2)}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-4 border-t border-white/[0.06]">
+        <div className="p-4 text-center border-r border-white/[0.06]">
+          <p className="text-xs text-white/30 mb-1">Entry</p>
+          <p className="font-medium tabular-nums">${prediction.entryPrice.toFixed(2)}</p>
+        </div>
+        <div className="p-4 text-center border-r border-white/[0.06]">
+          <p className="text-xs text-white/30 mb-1">Current</p>
+          <p className="font-medium tabular-nums">${prediction.markPrice.toFixed(2)}</p>
+        </div>
+        <div className="p-4 text-center border-r border-white/[0.06]">
+          <p className="text-xs text-white/30 mb-1">Fees</p>
+          <p className="font-medium tabular-nums">${prediction.feesPaidValue.toFixed(2)}</p>
+        </div>
+        <div className="p-4 text-center">
+          <p className="text-xs text-white/30 mb-1">Closes</p>
+          <p className="font-medium tabular-nums">
+            {new Date(market.closeTime).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
+          </p>
+        </div>
+      </div>
+
+      {/* Footer */}
+      {asset.link && (
+        <div className="px-6 py-3 border-t border-white/[0.06] flex items-center justify-between">
+          <span className="text-xs text-white/30">
+            Opened {new Date(prediction.createdAt).toLocaleDateString()}
+          </span>
+          <a 
+            href={asset.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white transition-apple"
+          >
+            View on Jupiter
+            <ExternalLink className="size-3" />
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}

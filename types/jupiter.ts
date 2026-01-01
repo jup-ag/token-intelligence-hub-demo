@@ -34,6 +34,16 @@ export interface TokenPrice {
 }
 
 // Portfolio types
+export interface PortfolioElement {
+  platformId: string;
+  platformName?: string;
+  platformImage?: string;
+  type: string;
+  label?: string;
+  value: number;
+  data: any; // Platform-specific position data
+}
+
 export interface Position {
   mint: string;
   amount: string;
@@ -43,6 +53,11 @@ export interface Position {
 
 // API Response types
 export interface TokensSearchResponse {
+  [mint: string]: TokenInfo;
+}
+
+// Category endpoint returns same structure as search
+export interface CategoryResponse {
   [mint: string]: TokenInfo;
 }
 
@@ -63,7 +78,11 @@ export interface CookingTokensResponse {
 }
 
 export interface PortfolioResponse {
-  positions: Position[];
+  date: number;
+  owner: string;
+  elements: PortfolioElement[];
   totalValue: number;
+  duration?: number;
+  fetcherReports?: any[];
 }
 

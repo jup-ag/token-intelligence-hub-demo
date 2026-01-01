@@ -53,7 +53,9 @@ export function ContentTabs({ content }: ContentTabsProps) {
               </TypographyP>
             </div>
           ) : (
-            tab.content.map((item) => <ContentCard key={item.id} content={item} />)
+            tab.content.map((item, index) => (
+              <ContentCard key={item.id || `${tab.value}-${index}`} content={item} />
+            ))
           )}
         </TabsContent>
       ))}

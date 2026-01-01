@@ -1,5 +1,5 @@
 import { jupiterFetch } from "@/lib/jupiter/client";
-import { type TokenInfo, type TokensSearchResponse } from "@/types/jupiter";
+import { type TokenInfo, type TokensSearchResponse, type CategoryResponse } from "@/types/jupiter";
 
 /**
  * Jupiter Tokens API v2 Client
@@ -21,41 +21,118 @@ import { type TokenInfo, type TokensSearchResponse } from "@/types/jupiter";
  * ```
  */
 export async function searchTokens(query: string): Promise<TokenInfo[]> {
-  const response = await jupiterFetch<TokensSearchResponse>(
+  if (!query || query.trim().length === 0) {
+    return [];
+  }
+  
+  const response = await jupiterFetch<any>(
     `/tokens/v2/search?query=${encodeURIComponent(query)}`
   );
   
-  return Object.values(response);
+  // Handle different response formats
+  let tokensArray: any[] = [];
+  
+  if (Array.isArray(response)) {
+    tokensArray = response;
+  } else if (response && typeof response === "object") {
+    tokensArray = Object.values(response);
+  }
+  
+  // Map API field names to our TokenInfo interface
+  // Search API uses: id → mint, icon → logoURI
+  return tokensArray.map((token) => ({
+    mint: token.id || token.mint,
+    name: token.name,
+    symbol: token.symbol,
+    decimals: token.decimals,
+    logoURI: token.icon || token.logoURI,
+    tags: token.tags,
+    organicScore: token.organicScore,
+    marketCap: token.marketCap,
+    holders: token.holders || token.holderCount,
+  }));
 }
 
 export async function getTokensByTag(tag: "verified" | "lst"): Promise<TokenInfo[]> {
-  const response = await jupiterFetch<TokensSearchResponse>(
+  const response = await jupiterFetch<any>(
     `/tokens/v2/tag?query=${tag}`
   );
   
-  return Object.values(response);
+  const tokensArray = Array.isArray(response) ? response : Object.values(response);
+  
+  // Map API field names to our TokenInfo interface
+  return tokensArray.map((token) => ({
+    mint: token.id || token.mint,
+    name: token.name,
+    symbol: token.symbol,
+    decimals: token.decimals,
+    logoURI: token.icon || token.logoURI,
+    tags: token.tags,
+    organicScore: token.organicScore,
+    marketCap: token.marketCap,
+    holders: token.holders || token.holderCount,
+  }));
 }
 
 export async function getTokensByCategory(
-  category: string,
-  interval: string = "24h"
+  category: "toporganicscore" | "toptraded" | "toptrending",
+  interval: "5m" | "1h" | "6h" | "24h" = "5m",
+  limit: number = 50
 ): Promise<TokenInfo[]> {
-  const response = await jupiterFetch<TokensSearchResponse>(
-    `/tokens/v2/category?category=${category}&interval=${interval}`
+  const response = await jupiterFetch<any>(
+    `/tokens/v2/${category}/${interval}?limit=${limit}`
   );
   
-  return Object.values(response);
+  // Handle different response formats
+  let tokensArray: any[] = [];
+  
+  if (Array.isArray(response)) {
+    tokensArray = response;
+  } else if (response && typeof response === "object") {
+    tokensArray = Object.values(response);
+  }
+  
+  // Map API field names to our TokenInfo interface
+  // Category API uses: id → mint, icon → logoURI
+  return tokensArray.map((token) => ({
+    mint: token.id || token.mint,
+    name: token.name,
+    symbol: token.symbol,
+    decimals: token.decimals,
+    logoURI: token.icon || token.logoURI,
+    tags: token.tags,
+    organicScore: token.organicScore,
+    marketCap: token.marketCap,
+    holders: token.holders || token.holderCount,
+  }));
 }
 
 export async function getRecentTokens(): Promise<TokenInfo[]> {
-  const response = await jupiterFetch<TokensSearchResponse>(
+  const response = await jupiterFetch<any>(
     `/tokens/v2/recent`
   );
   
-  return Object.values(response);
+  const tokensArray = Array.isArray(response) ? response : Object.values(response);
+  
+  // Map API field names to our TokenInfo interface
+  return tokensArray.map((token) => ({
+    mint: token.id || token.mint,
+    name: token.name,
+    symbol: token.symbol,
+    decimals: token.decimals,
+    logoURI: token.icon || token.logoURI,
+    tags: token.tags,
+    organicScore: token.organicScore,
+    marketCap: token.marketCap,
+    holders: token.holders || token.holderCount,
+  }));
 }
 
 export async function getTokenInfo(mint: string): Promise<TokenInfo | null> {
+  if (!mint || mint.trim().length === 0) {
+    return null;
+  }
+  
   const tokens = await searchTokens(mint);
   return tokens.find(t => t.mint === mint) || null;
 }

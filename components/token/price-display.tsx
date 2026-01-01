@@ -52,7 +52,8 @@ export function PriceDisplay({ price, className, size = "default" }: PriceDispla
     );
   }
 
-  const isPositive = price.priceChange24h >= 0;
+  const hasChange = price.priceChange24h !== undefined && price.priceChange24h !== null;
+  const isPositive = hasChange && price.priceChange24h >= 0;
   const changeColor = isPositive ? "text-green-500" : "text-red-500";
 
   return (
@@ -66,13 +67,15 @@ export function PriceDisplay({ price, className, size = "default" }: PriceDispla
           maximumFractionDigits: price.usdPrice < 1 ? 6 : 2,
         })}
       </div>
-      <div className={cn("flex items-center gap-2 text-sm font-medium", changeColor)}>
-        <span>{isPositive ? "↗" : "↘"}</span>
-        <span>
-          {isPositive ? "+" : ""}
-          {price.priceChange24h.toFixed(2)}% today
-        </span>
-      </div>
+      {hasChange && (
+        <div className={cn("flex items-center gap-2 text-sm font-medium", changeColor)}>
+          <span>{isPositive ? "↗" : "↘"}</span>
+          <span>
+            {isPositive ? "+" : ""}
+            {price.priceChange24h.toFixed(2)}% today
+          </span>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,72 +1,111 @@
-import { Badge } from "@/components/ui/badge";
-import { FileText, Twitter, Newspaper, MessageSquare } from "lucide-react";
-import { type TokenContent } from "@/types/jupiter";
+"use client";
+
+import { TweetEmbed } from "@/components/content/tweet-embed";
+import { type TokenContent, type TokenInfo } from "@/types/jupiter";
+import Link from "next/link";
+import { useState } from "react";
 
 interface ContentCardProps {
   content: TokenContent;
+  tokenInfo?: TokenInfo;
 }
 
-const contentTypeIcons = {
-  text: FileText,
-  tweet: Twitter,
-  summary: Newspaper,
-  news: MessageSquare,
-};
-
-const contentTypeColors = {
-  text: "bg-blue-500/10 text-blue-500 border-blue-500/20",
-  tweet: "bg-sky-500/10 text-sky-500 border-sky-500/20",
-  summary: "bg-purple-500/10 text-purple-500 border-purple-500/20",
-  news: "bg-orange-500/10 text-orange-500 border-orange-500/20",
-};
-
-export function ContentCard({ content }: ContentCardProps) {
-  const Icon = contentTypeIcons[content.type];
-
+function TokenImage({ tokenInfo, mint }: { tokenInfo?: TokenInfo; mint: string }) {
+  const [imgError, setImgError] = useState(false);
+  const hasLogo = tokenInfo?.logoURI && !tokenInfo.logoURI.includes('ipfs') && !imgError;
+  
+  if (hasLogo) {
+    return (
+      <img 
+        src={tokenInfo.logoURI} 
+        alt={tokenInfo.symbol}
+        className="size-6 rounded-full object-cover"
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  
+  const symbol = tokenInfo?.symbol || mint.slice(0, 2);
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-8 space-y-5">
-      {/* Header - Clean alignment */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Icon className="size-5 text-white/40" />
-          <Badge variant="outline" className={contentTypeColors[content.type]}>
-            {content.type}
-          </Badge>
-        </div>
-        <Badge variant="outline" className="text-xs border-green-500/30 bg-green-500/10 text-green-400">
-          VRFD
-        </Badge>
-      </div>
-
-      {/* Content - Better readability */}
-      <div className="leading-relaxed text-white/90 whitespace-pre-wrap">
-        {content.content}
-      </div>
-
-      {/* Metadata - Clean footer */}
-      <div className="pt-4 border-t border-white/10 space-y-2 text-xs">
-        <div className="text-white/60">
-          By {content.submittedBy}
-        </div>
-        {content.source && (
-          <div>
-            <a
-              href={content.source}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              View source ↗
-            </a>
-          </div>
-        )}
-        {content.citations && content.citations.length > 0 && (
-          <div className="text-white/40">
-            {content.citations.length} citation{content.citations.length > 1 ? "s" : ""}
-          </div>
-        )}
-      </div>
+    <div className="size-6 rounded-full bg-white/[0.08] flex items-center justify-center text-[10px] font-medium text-white/50">
+      {symbol.slice(0, 2).toUpperCase()}
     </div>
   );
 }
 
+const typeStyles = {
+  text: "text-blue-400",
+  tweet: "text-sky-400",
+  summary: "text-purple-400",
+  news: "text-orange-400",
+};
+
+export function ContentCard({ content, tokenInfo }: ContentCardProps) {
+  const isTweetUrl = content.type === "tweet" && content.content.startsWith("http");
+
+  // Tweet card
+  if (isTweetUrl) {
+    return (
+      <div className="card-elevated rounded-2xl overflow-hidden">
+        {/* Minimal header */}
+        <div className="px-4 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TokenImage tokenInfo={tokenInfo} mint={content.mint} />
+            <span className="text-sm font-medium text-white/80">
+              {tokenInfo?.symbol || 'Token'}
+            </span>
+            <div className="size-1.5 rounded-full bg-[#30D158]" />
+          </div>
+          <Link 
+            href={`/token/${content.mint}`}
+            className="text-xs text-white/30 hover:text-white/60 transition-apple"
+          >
+            View
+          </Link>
+        </div>
+
+        {/* Tweet */}
+        <div className="[&>div]:!m-0 [&_.react-tweet-theme]:!m-0 border-t border-white/[0.04]">
+          <TweetEmbed url={content.content} />
+        </div>
+      </div>
+    );
+  }
+
+  // Text/Summary card
+  const truncatedContent = content.content.length > 200 
+    ? content.content.slice(0, 200) + "..." 
+    : content.content;
+
+  return (
+    <Link href={`/token/${content.mint}`}>
+      <div className="card-elevated rounded-2xl p-5 hover:bg-white/[0.05] transition-apple cursor-pointer">
+        {/* Header */}
+        <div className="flex items-center gap-2 mb-4">
+          <TokenImage tokenInfo={tokenInfo} mint={content.mint} />
+          <span className="text-sm font-medium text-white/80">
+            {tokenInfo?.symbol || content.mint.slice(0, 8)}
+          </span>
+          <span className={`text-xs ${typeStyles[content.type] || typeStyles.text}`}>
+            {content.type}
+          </span>
+          <div className="flex-1" />
+          <div className="size-1.5 rounded-full bg-[#30D158]" />
+        </div>
+
+        {/* Content */}
+        <p className="text-sm text-white/60 leading-relaxed mb-4">
+          {truncatedContent}
+        </p>
+
+        {/* Footer */}
+        <div className="flex items-center justify-between text-xs text-white/30">
+          <span>{content.submittedBy}</span>
+          {content.citations && content.citations.length > 0 && (
+            <span>{content.citations.length} sources</span>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}

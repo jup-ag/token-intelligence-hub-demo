@@ -1,61 +1,41 @@
 import { Suspense } from "react";
-import { TypographyH1, TypographyMuted } from "@/components/ui/typography";
 import { ContentFeedClient } from "@/components/content/content-feed-client";
-import { Skeleton } from "@/components/ui/skeleton";
 
-// Force dynamic rendering for client-side nuqs usage
-// Why: Content feed uses URL state management for pagination and filters
 export const dynamic = "force-dynamic";
 
-/**
- * Loading skeleton for content feed
- * Matches content card structure for smooth transitions
- */
-function ContentFeedSkeleton() {
+function ContentSkeleton() {
   return (
-    <div className="space-y-4">
-      {Array.from({ length: 3 }).map((_, i) => (
-        <Skeleton key={i} className="h-48 bg-white/5" />
+    <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} className="h-64 rounded-2xl bg-white/[0.03] animate-pulse break-inside-avoid mb-4" />
       ))}
     </div>
   );
 }
 
-/**
- * Content Feed Page
- * 
- * Displays paginated feed of VRFD-verified content across all tokens.
- * Uses URL state for filters and pagination (shareable URLs).
- * 
- * Features:
- * - Filter by content type (summaries, news, tweets, posts)
- * - Pagination with URL state
- * - VRFD content attribution and sources
- * 
- * Design: Centered layout with max-width for readability
- */
 export default function ContentFeedPage() {
   return (
     <div className="min-h-screen">
-      {/* Centered header */}
-      <div className="flex flex-col items-center justify-center pt-20 pb-12 px-6">
-        <div className="text-center space-y-3 max-w-2xl">
-          <TypographyH1 className="text-5xl">Content</TypographyH1>
-          <TypographyMuted className="text-base [&:not(:first-child)]:mt-0">
-            Verified content from Jupiter VRFD
-          </TypographyMuted>
+      {/* Hero */}
+      <section className="pt-32 pb-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-6xl sm:text-7xl font-semibold tracking-tight">
+            Content
+          </h1>
+          <p className="mt-4 text-white/40 text-lg">
+            Verified intelligence from across the ecosystem
+          </p>
         </div>
-      </div>
+      </section>
 
-      {/* Content feed - max-width for optimal reading */}
-      <div className="max-w-4xl mx-auto px-6 pb-24">
-        {/* Suspense required for nuqs usage
-            Why: nuqs uses useSearchParams internally, needs Suspense in App Router */}
-        <Suspense fallback={<ContentFeedSkeleton />}>
-          <ContentFeedClient />
-        </Suspense>
-      </div>
+      {/* Feed */}
+      <section className="px-6 pb-32">
+        <div className="max-w-7xl mx-auto">
+          <Suspense fallback={<ContentSkeleton />}>
+            <ContentFeedClient />
+          </Suspense>
+        </div>
+      </section>
     </div>
   );
 }
-

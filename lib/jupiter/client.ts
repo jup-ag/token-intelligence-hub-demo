@@ -29,13 +29,13 @@ const BASE_URL = "https://api.jup.ag";
  * 
  * @example
  * ```typescript
- * // Type-safe API call
+ * // GET request (default)
  * const tokens = await jupiterFetch<TokensResponse>('/tokens/v2/search?query=SOL');
  * 
- * // With POST request
- * const result = await jupiterFetch<SwapResponse>('/ultra/v1/order', {
+ * // POST request
+ * const result = await jupiterFetch<ExecuteResponse>('/ultra/v1/execute', {
  *   method: 'POST',
- *   body: JSON.stringify(orderParams)
+ *   body: JSON.stringify({ transaction: signedTx })
  * });
  * ```
  */

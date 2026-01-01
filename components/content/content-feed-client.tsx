@@ -1,24 +1,15 @@
-"use client"; // JUSTIFIED: uses useContentFeedParams hook
+"use client";
 
 import { useState, useEffect } from "react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
 import { ContentCard } from "@/components/content/content-card";
-import { TypographyMuted } from "@/components/ui/typography";
 import { useContentFeedParams } from "@/hooks/use-content-feed-params";
 import { getContentFeed } from "@/lib/jupiter/content";
-import { Skeleton } from "@/components/ui/skeleton";
-import { type TokenContent } from "@/types/jupiter";
+import { type TokenContent, type TokenInfo } from "@/types/jupiter";
 
 export function ContentFeedClient() {
   const [params, setParams] = useContentFeedParams();
   const [content, setContent] = useState<TokenContent[]>([]);
+  const [tokensMap, setTokensMap] = useState<Record<string, TokenInfo>>({});
   const [hasMore, setHasMore] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -33,6 +24,7 @@ export function ContentFeedClient() {
       const page = parseInt(params.page) || 1;
       const feedData = await getContentFeed(page, params.type);
       setContent(feedData.data);
+      setTokensMap(feedData.tokensMap || {});
       setHasMore(feedData.hasMore);
     } catch (error) {
       console.error("Failed to fetch content feed:", error);
@@ -55,71 +47,79 @@ export function ContentFeedClient() {
 
   const currentPage = parseInt(params.page) || 1;
 
+  const contentTypes = [
+    { value: "all", label: "All" },
+    { value: "tweet", label: "Tweets" },
+    { value: "news", label: "News" },
+    { value: "summary", label: "Summaries" },
+  ];
+
   return (
     <div className="space-y-10">
-      {/* Filters - Centered */}
-      <div className="flex justify-center">
-        <Select
-          value={params.type}
-          onValueChange={(value) => setParams({ type: value, page: "1" })}
-        >
-          <SelectTrigger className="w-56 bg-white/5 border-white/10">
-            <SelectValue placeholder="Content Type" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Content</SelectItem>
-            <SelectItem value="summary">Summaries</SelectItem>
-            <SelectItem value="news">News</SelectItem>
-            <SelectItem value="tweet">Tweets</SelectItem>
-            <SelectItem value="text">Community Posts</SelectItem>
-          </SelectContent>
-        </Select>
+      {/* Filters - Minimal pill style */}
+      <div className="flex items-center gap-2">
+        {contentTypes.map((type) => (
+          <button
+            key={type.value}
+            onClick={() => setParams({ type: type.value, page: "1" })}
+            className={`px-4 py-2 rounded-full text-sm transition-apple ${
+              params.type === type.value
+                ? "bg-white text-black"
+                : "bg-white/[0.06] text-white/60 hover:bg-white/[0.1] hover:text-white"
+            }`}
+          >
+            {type.label}
+          </button>
+        ))}
+        
+        {!isLoading && (
+          <span className="ml-4 text-sm text-white/30">
+            {content.length} items
+          </span>
+        )}
       </div>
 
-      {/* Content */}
+      {/* Content Grid */}
       {isLoading ? (
-        <div className="space-y-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-48 bg-white/5" />
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="h-64 rounded-2xl bg-white/[0.03] animate-pulse break-inside-avoid mb-4" />
           ))}
         </div>
       ) : content.length === 0 ? (
-        <div className="flex items-center justify-center py-20">
-          <p className="text-white/60">
-            No content available for this filter
-          </p>
+        <div className="py-20">
+          <p className="text-white/30">No content available</p>
         </div>
       ) : (
-        <div className="space-y-4">
+        <div className="columns-1 sm:columns-2 md:columns-3 lg:columns-4 gap-4">
           {content.map((item) => (
-            <ContentCard key={item.id} content={item} />
+            <div key={item.id} className="break-inside-avoid mb-4">
+              <ContentCard content={item} tokenInfo={tokensMap[item.mint]} />
+            </div>
           ))}
         </div>
       )}
 
-      {/* Pagination - Clean and centered */}
-      <div className="flex items-center justify-center gap-6">
-        <Button
-          variant="ghost"
+      {/* Pagination */}
+      <div className="flex items-center justify-center gap-8 pt-8">
+        <button
           onClick={handlePrevPage}
           disabled={currentPage === 1 || isLoading}
-          className="text-white/60 hover:text-white disabled:text-white/20"
+          className="text-sm text-white/40 hover:text-white disabled:text-white/10 disabled:cursor-not-allowed transition-apple"
         >
-          ← Previous
-        </Button>
-        <div className="text-sm text-white/60">
-          Page {currentPage}
-        </div>
-        <Button
-          variant="ghost"
+          Previous
+        </button>
+        <span className="text-sm text-white/30 tabular-nums">
+          {currentPage}
+        </span>
+        <button
           onClick={handleNextPage}
           disabled={!hasMore || isLoading}
-          className="text-white/60 hover:text-white disabled:text-white/20"
+          className="text-sm text-white/40 hover:text-white disabled:text-white/10 disabled:cursor-not-allowed transition-apple"
         >
-          Next →
-        </Button>
+          Next
+        </button>
       </div>
     </div>
   );
 }
-

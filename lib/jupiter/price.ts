@@ -26,13 +26,16 @@ import { type PricesResponse } from "@/types/jupiter";
  * ```
  */
 export async function getPrices(mints: string[]): Promise<PricesResponse> {
-  if (mints.length === 0) {
+  // Filter out empty or invalid mints before making API call
+  const validMints = mints.filter((mint) => mint && mint.trim().length > 0);
+  
+  if (validMints.length === 0) {
     return {};
   }
   
-  const mintsParam = mints.join(",");
+  const idsParam = validMints.join(",");
   const response = await jupiterFetch<PricesResponse>(
-    `/price/v3?mints=${mintsParam}`
+    `/price/v3?ids=${idsParam}`
   );
   
   return response;
