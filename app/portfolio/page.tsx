@@ -73,12 +73,15 @@ export default function PortfolioPage() {
   return (
     <div className="min-h-screen">
       {/* Hero */}
-      <section className="pt-32 pb-16 px-6 border-b border-white/[0.06]">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-start justify-between mb-12">
-            <h1 className="text-6xl sm:text-7xl font-semibold tracking-tight">
-              Portfolio
-            </h1>
+      <section className="pt-32 pb-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-start justify-between mb-8">
+            <div>
+              <h1 className="text-6xl sm:text-7xl font-semibold tracking-tight">
+                Portfolio
+              </h1>
+              <p className="mt-4 text-white/40 text-lg">Your positions and holdings</p>
+            </div>
             <button
               onClick={fetchPortfolio}
               disabled={isLoading}
@@ -116,8 +119,8 @@ export default function PortfolioPage() {
       </section>
 
       {/* Positions */}
-      <section className="px-6 py-12">
-        <div className="max-w-5xl mx-auto">
+      <section className="px-6 pb-32">
+        <div className="max-w-7xl mx-auto">
           <h2 className="text-lg font-medium mb-6">Positions</h2>
 
           {isLoading ? (
