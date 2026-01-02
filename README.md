@@ -24,10 +24,12 @@ npm install
 
 2. Create `.env.local` with your Jupiter API key:
 ```
-NEXT_PUBLIC_JUPITER_API_KEY=your_api_key_here
+JUPITER_API_KEY=your_api_key_here
 ```
 
 Get an API key at https://portal.jup.ag
+
+Note: The API key is server-only (no `NEXT_PUBLIC_` prefix) to prevent exposure in the browser.
 
 3. Run the dev server:
 ```bash
