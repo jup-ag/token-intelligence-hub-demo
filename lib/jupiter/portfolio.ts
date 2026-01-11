@@ -10,10 +10,10 @@ import { type PortfolioResponse } from "@/types/jupiter";
 
 /** Get all positions for a wallet */
 export async function getPositions(address: string): Promise<PortfolioResponse> {
-  return jupiterFetch<PortfolioResponse>(`/portfolio/v2/${address}`);
+  return jupiterFetch<PortfolioResponse>(`/portfolio/v1/positions/${address}`);
 }
 
 /** Get list of supported platforms */
 export async function getPlatforms() {
-  return jupiterFetch(`/portfolio/v2/platforms`);
+  return jupiterFetch(`/portfolio/v1/platforms`);
 }

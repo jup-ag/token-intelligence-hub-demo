@@ -74,7 +74,7 @@ export default async function ContentPage({ searchParams }: ContentPageProps) {
       <section className="pt-32 pb-16 px-6">
         <div className="max-w-7xl mx-auto">
           <h1 className="text-6xl sm:text-7xl font-semibold tracking-tight">Content</h1>
-          <p className="mt-4 text-white/40 text-lg">Verified intelligence from across the ecosystem</p>
+          <p className="mt-4 text-white/40 text-lg">Verified content from across the ecosystem</p>
         </div>
       </section>
 

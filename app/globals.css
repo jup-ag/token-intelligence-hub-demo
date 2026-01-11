@@ -104,9 +104,9 @@
     background-clip: content-box;
   }
   
-  /* Glass effect - Apple's signature */
+  /* Glass effect - Apple's signature with solid fallback for readability */
   .glass {
-    background: rgba(255, 255, 255, 0.03);
+    background: rgba(20, 20, 20, 0.85);
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
   }

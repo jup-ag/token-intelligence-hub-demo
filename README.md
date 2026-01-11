@@ -1,6 +1,6 @@
-# Token Intelligence Hub
+# Pulse
 
-A token research and trading platform built with Jupiter APIs. Browse trending tokens, search the ecosystem, view verified content, and swap tokens directly.
+A demo app showcasing what you can build with Jupiter APIs. Browse trending tokens, view verified content, trade prediction markets, and swap tokens—all powered by Jupiter.
 
 ## Features
 
