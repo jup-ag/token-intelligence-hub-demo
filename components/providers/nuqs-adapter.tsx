@@ -6,3 +6,4 @@ export function NuqsProvider({ children }: { children: React.ReactNode }) {
   return <NuqsAdapter>{children}</NuqsAdapter>;
 }
 
+
